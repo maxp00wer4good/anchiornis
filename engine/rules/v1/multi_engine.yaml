@@ -1,0 +1,26 @@
+version: v1
+rule_id: RULE_MULTI_ENGINE
+enabled: true
+
+scope:
+  subject_var: "?u"
+  subject_prefix: "url:"
+
+plan:
+  - op: match
+    name: engine_hits
+    source: "?u"
+    rel_in:
+      - detected_as_malicious_by
+      - detected_as_malware_by
+
+condition:
+  op: distinct_count_gte
+  collection: engine_hits
+  field: dst
+  value: 3
+
+emit:
+  - src: "?u"
+    rel: has_consensus_signal
+    dst: signal:multi_engine_malicious

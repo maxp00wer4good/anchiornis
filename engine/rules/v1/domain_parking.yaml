@@ -1,0 +1,68 @@
+version: v1
+rule_id: RULE_DOMAIN_PARKING
+enabled: true
+
+scope:
+  subject_var: "?u"
+  subject_prefix: "url:"
+
+plan:
+  - op: match
+    name: suspicious_subdomain
+    source: "?u"
+    rel_in:
+      - final_domain
+      - observed_domain
+    dst_contains_any:
+      - "domain:ww"
+
+  - op: match
+    name: dn_tracking
+    source: "?u"
+    rel: observed_url
+    dst_contains_any:
+      - "?dn="
+
+  - op: match_one
+    name: resolution
+    source: "?u"
+    rel: resolves_to
+    bind_dst: "?ip"
+
+  - op: match
+    name: parking_provider
+    source: "?ip"
+    rel: hosted_by
+    dst_contains_any:
+      - "team internet"
+      - "trellian"
+      - "above"
+      - "sedo"
+      - "bodis"
+      - "parkingcrew"
+
+  - op: match
+    name: associated_parking_domain
+    source: "?ip"
+    rel: associated_domain
+    dst_contains_any:
+      - "teaminternet.com"
+      - "trellian.com"
+      - "above.com"
+      - "sedo"
+      - "bodis"
+      - "parkingcrew"
+
+condition:
+  op: count_nonempty_gte
+  collections:
+    - suspicious_subdomain
+    - dn_tracking
+    - parking_provider
+    - associated_parking_domain
+  value: 3
+
+emit:
+  - src: "?u"
+    rel: shows_parking_behavior
+    dst: signal:domain_parking

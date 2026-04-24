@@ -1,0 +1,41 @@
+version: v1
+rule_id: RULE_CERTIFICATE_MISMATCH
+enabled: true
+
+scope:
+  subject_var: "?u"
+  subject_prefix: "url:"
+
+plan:
+  - op: match_one
+    name: final_domain
+    source: "?u"
+    rel: final_domain
+    bind_dst: "?fd"
+
+  - op: match
+    name: certs
+    source: "?u"
+    rel: uses_certificate
+
+  - op: match
+    name: certs_not_matching_final
+    source: "?u"
+    rel: uses_certificate
+    dst_not_contains_vars:
+      - "?fd"
+
+condition:
+  op: all
+  items:
+    - op: count_gte
+      collection: certs
+      value: 2
+    - op: count_gte
+      collection: certs_not_matching_final
+      value: 2
+
+emit:
+  - src: "?u"
+    rel: has_certificate_divergence
+    dst: signal:certificate_mismatch
